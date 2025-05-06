@@ -15,6 +15,14 @@
     h1 {
       text-align: center;
       color: #333;
+      position: relative;
+    }
+    h1::after {
+      content: "";
+      display: block;
+      width: 100px;
+      margin: 8px auto 0;
+      border-bottom: 3px solid #0052cc;
     }
     #lastUpdate {
       font-weight: bold;
@@ -27,6 +35,10 @@
       justify-content: center;
       gap: 10px;
       margin-bottom: 20px;
+      background-color: #f0f4fa;
+      padding: 12px 20px;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .filters input,
     .filters select,
@@ -64,13 +76,19 @@
     }
     th, td {
       border: 1px solid #ddd;
-      padding: 12px;
+      padding: 16px;
       text-align: right;
       vertical-align: top;
     }
     th {
       background-color: #e6f0ff;
       color: #003d99;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:hover {
+      background-color: #f2f7ff;
     }
     .proposer-cell {
       max-width: 200px;
@@ -82,6 +100,7 @@
       display: inline;
       color: #333;
       margin-inline-start: 5px;
+      transition: all 0.2s ease-in-out;
     }
     .hidden {
       display: none;
@@ -112,16 +131,16 @@
 <body>
   <h1>הצעות חוק - הכנסת ה-25</h1>
   <div style="text-align: center; margin-bottom: 20px;">
-    <button onclick="exportToCSV()" style="margin-left: 10px;">ייצוא ל-CSV</button>
-    <button onclick="window.open('https://beactive.co.il/project/80004', '_blank')">תרומה למצב הנתון</button>
+    <button onclick="exportToCSV()" style="margin-left: 10px;">📄 ייצוא ל-CSV</button>
+    <button onclick="window.open('https://beactive.co.il/project/80004', '_blank')">❤️ תרומה למצב הנתון</button>
   </div>
   <div id="lastUpdate">עדכני לתאריך: טוען...</div>
   <div class="filters">
-    <input type="text" id="searchName" placeholder="חפש לפי שם החוק">
+    <input type="text" id="searchName" placeholder="🔍 חפש לפי שם החוק">
     <select id="searchStage"></select>
-    <input type="text" id="searchProposer" placeholder="חפש לפי מציע">
+    <input type="text" id="searchProposer" placeholder="👤 חפש לפי מציע">
     <select id="searchDays" onchange="updateStageOptions()">
-      <option value="">כל התאריכים</option>
+      <option value="">🕒 כל התאריכים</option>
       <option value="7">7 ימים אחרונים</option>
       <option value="30">30 ימים אחרונים</option>
       <option value="90">90 ימים אחרונים</option>
@@ -224,7 +243,7 @@
           <td>${row.name || ''}</td>
           <td>${row.stage || ''}</td>
           <td class="proposer-cell">
-            <span>${mainProposer}</span>
+            <span title="${proposerList.join(', ')}">${mainProposer}</span>
             ${otherProposers.length ? `<button class="show-more-btn" onclick="toggleMore('${otherId}')">+</button>
             <span id="${otherId}" class="more-proposers hidden">${otherProposers.join(', ')}</span>` : ''}
           </td>
