@@ -10,10 +10,12 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: right; }
     th { background-color: #f2f2f2; }
+    #lastUpdate { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
   <h1>הצעות חוק - הכנסת ה-25</h1>
+  <div id="lastUpdate">עדכנתי לתאריך: טוען...</div>
   <div>
     <input type="text" id="searchName" placeholder="חפש לפי שם החוק" oninput="filterTable()">
     <input type="text" id="searchStage" placeholder="חפש לפי שלב" oninput="filterTable()">
@@ -46,6 +48,20 @@
       const json = XLSX.utils.sheet_to_json(sheet);
       allData = json;
       renderTable(json);
+      updateLastUpdateDate(json);
+    }
+
+    function updateLastUpdateDate(data) {
+      const dates = data
+        .map(row => new Date(row.last_date))
+        .filter(d => !isNaN(d));
+      if (dates.length > 0) {
+        const latest = new Date(Math.max(...dates));
+        const formatted = latest.toLocaleDateString('he-IL');
+        document.getElementById('lastUpdate').innerText = `עדכנתי לתאריך: ${formatted}`;
+      } else {
+        document.getElementById('lastUpdate').innerText = 'אין תאריכים זמינים';
+      }
     }
 
     function renderTable(data) {
