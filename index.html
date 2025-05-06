@@ -135,8 +135,7 @@
     <button onclick="window.open('https://beactive.co.il/project/80004', '_blank')">❤️ תרומה למצב הנתון</button>
   </div>
   <div id="lastUpdate">עדכני לתאריך: טוען...</div>
-  $1
-    <select id="statusFilter">
+  <select id="statusFilter">
       <option value="">📌 כל ההצעות</option>
       <option value="active">📗 הצעות פעילות</option>
       <option value="inactive">📙 הצעות לא פעילות</option>
@@ -186,11 +185,33 @@
       const stageSelect = document.getElementById('searchStage');
       const daysVal = document.getElementById('searchDays').value;
       const days = daysVal ? parseInt(daysVal) : null;
+      const status = document.getElementById('statusFilter').value;
       const today = new Date();
+
+      const activeStages = [
+        "הצעת החוק נמצאת בשלב הדיון המוקדם",
+        "הצעת החוק נמצאת בשלב הקריאה הראשונה",
+        "הצעת החוק נמצאת בשלב ההכנה לקריאה הראשונה בוועדה",
+        "הצעת החוק נמצאת בשלב ההכנה בוועדה לקריאה השנייה והשלישית",
+        "הצעת החוק נמצאת בשלב הקריאה השנייה והשלישית"
+      ];
+      const inactiveStages = [
+        "הצעת החוק נעצרה בשלב הדיון המוקדם",
+        "הצעת החוק נעצרה בשלב ההכנה לקריאה הראשונה",
+        "הצעת החוק נעצרה בשלב הקריאה הראשונה",
+        "הצעת החוק נעצרה בשלב ההכנה לקריאה השנייה והשלישית"
+      ];
+      const approvedStages = ["הצעת החוק התקבלה בקריאה שלישית והפכה לחוק"];
 
       const filtered = allData.filter(row => {
         const rowDate = toValidDate(row.last_date);
-        return !days || (rowDate && (today - rowDate) / (1000 * 60 * 60 * 24) <= days);
+        const includeDate = !days || (rowDate && (today - rowDate) / (1000 * 60 * 60 * 24) <= days);
+        const includeStatus =
+          !status ||
+          (status === 'active' && activeStages.includes(row.stage)) ||
+          (status === 'inactive' && inactiveStages.includes(row.stage)) ||
+          (status === 'approved' && approvedStages.includes(row.stage));
+        return includeDate && includeStatus;
       });
 
       const uniqueStages = [...new Set(filtered.map(row => row.stage).filter(Boolean))];
