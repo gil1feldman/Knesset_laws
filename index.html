@@ -44,6 +44,18 @@
     .filters button:hover {
       background-color: #003d99;
     }
+    button {
+      padding: 8px 14px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      background-color: #0066cc;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #004b99;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -90,11 +102,19 @@
       th, td {
         font-size: 14px;
       }
+      table {
+        display: block;
+        overflow-x: auto;
+      }
     }
   </style>
 </head>
 <body>
   <h1>הצעות חוק - הכנסת ה-25</h1>
+  <div style="text-align: center; margin-bottom: 20px;">
+    <button onclick="exportToCSV()" style="margin-left: 10px;">ייצוא ל-CSV</button>
+    <button onclick="window.open('https://beactive.co.il/project/80004', '_blank')">תרומה למצב הנתון</button>
+  </div>
   <div id="lastUpdate">עדכני לתאריך: טוען...</div>
   <div class="filters">
     <input type="text" id="searchName" placeholder="חפש לפי שם החוק">
@@ -189,7 +209,6 @@
       tbody.innerHTML = '';
       data.forEach((row, index) => {
         let proposerList = (row.knesset_members || '').split(/,|;/).map(p => p.trim()).filter(p => p);
-
         if (row.type && (row.type.includes('ממשלתית') || row.type.includes('ועדה'))) {
           proposerList = [row.type];
         }
@@ -218,7 +237,9 @@
 
     function toggleMore(id) {
       const el = document.getElementById(id);
+      const btn = el.previousElementSibling;
       el.classList.toggle('hidden');
+      btn.textContent = el.classList.contains('hidden') ? '+' : '–';
     }
 
     function filterTable() {
@@ -243,8 +264,27 @@
         );
       });
 
-      updateStageOptions();
       renderTable(filtered);
+    }
+
+    function exportToCSV() {
+      const headers = ['שם החוק', 'שלב', 'שמות המציעים', 'תאריך עדכון אחרון', 'קישור'];
+      const rows = [...document.querySelectorAll('#lawsTable tbody tr')].map(tr => {
+        const cells = [...tr.children].map(td => td.innerText.replace(/\n/g, ' ').trim());
+        return cells;
+      });
+
+      let csvContent = '\uFEFF' + headers.join(',') + '\n';
+      csvContent += rows.map(e => e.join(',')).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'הצעות_חוק_כנסת_25.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     fetchExcel();
