@@ -9,76 +9,59 @@
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       direction: rtl;
       padding: 20px;
-      background: linear-gradient(to bottom, #f0f4ff, #ffffff);
+      background-color: #f9f9f9;
       margin: 0;
     }
     h1 {
       text-align: center;
-      color: #1a237e;
-      margin-bottom: 10px;
+      color: #333;
     }
     #lastUpdate {
       font-weight: bold;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       text-align: center;
-      font-size: 16px;
-      color: #333;
     }
     .filters {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
     .filters input,
     .filters select,
     .filters button {
-      padding: 10px 14px;
-      font-size: 15px;
-      border: 1px solid #bbb;
-      border-radius: 6px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
     }
     .filters button {
-      background-color: #1a237e;
+      background-color: #0052cc;
       color: white;
-      font-weight: bold;
-      transition: background-color 0.3s;
+      cursor: pointer;
     }
     .filters button:hover {
-      background-color: #0d154d;
+      background-color: #003d99;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       background-color: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     th, td {
-      border: 1px solid #e0e0e0;
-      padding: 14px;
+      border: 1px solid #ddd;
+      padding: 12px;
       text-align: right;
       vertical-align: top;
-      font-size: 15px;
     }
     th {
-      background-color: #e3f2fd;
-      color: #0d47a1;
-      font-weight: 600;
-    }
-    td a {
-      color: #1565c0;
-      font-weight: bold;
-      text-decoration: none;
-    }
-    td a:hover {
-      text-decoration: underline;
+      background-color: #e6f0ff;
+      color: #003d99;
     }
     .proposer-cell {
-      max-width: 220px;
+      max-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
       position: relative;
@@ -93,11 +76,10 @@
     }
     .show-more-btn {
       cursor: pointer;
-      color: #1a237e;
+      color: #0052cc;
       border: none;
       background: none;
-      font-weight: bold;
-      font-size: 16px;
+      text-decoration: underline;
       margin-right: 5px;
     }
     @media (max-width: 768px) {
@@ -138,5 +120,134 @@
     </thead>
     <tbody></tbody>
   </table>
+
+  <script>
+    let allData = [];
+
+    async function fetchExcel() {
+      const url = 'https://raw.githubusercontent.com/gil1feldman/Knesset_laws/main/%D7%94%D7%A6%D7%A2%D7%95%D7%AA%20%D7%97%D7%95%D7%A7%20%D7%9E%D7%90%D7%95%D7%97%D7%93.xlsx';
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+      const sheet = workbook.Sheets['כנסת25'];
+      const json = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: '' });
+      allData = json;
+      updateStageOptions();
+      renderTable(json);
+      updateLastUpdateDate(json);
+    }
+
+    function updateStageOptions() {
+      const stageSelect = document.getElementById('searchStage');
+      const daysVal = document.getElementById('searchDays').value;
+      const days = daysVal ? parseInt(daysVal) : null;
+      const today = new Date();
+
+      const filtered = allData.filter(row => {
+        const rowDate = toValidDate(row.last_date);
+        return !days || (rowDate && (today - rowDate) / (1000 * 60 * 60 * 24) <= days);
+      });
+
+      const uniqueStages = [...new Set(filtered.map(row => row.stage).filter(Boolean))];
+      stageSelect.innerHTML = '<option value="">שלב החקיקה</option>' +
+        uniqueStages.map(stage => `<option value="${stage}">${stage}</option>`).join('');
+    }
+
+    function updateLastUpdateDate(data) {
+      const dates = data.map(row => toValidDate(row.last_date)).filter(Boolean);
+      if (dates.length > 0) {
+        const latest = new Date(Math.max(...dates.map(d => d.getTime())));
+        const formatted = formatDDMMYYYY(latest);
+        document.getElementById('lastUpdate').innerText = `עדכני לתאריך: ${formatted}`;
+      } else {
+        document.getElementById('lastUpdate').innerText = 'אין תאריכים זמינים';
+      }
+    }
+
+    function toValidDate(input) {
+      if (typeof input === 'number') {
+        const date = XLSX.SSF.parse_date_code(input);
+        return new Date(date.y, date.m - 1, date.d);
+      }
+      if (typeof input === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(input)) {
+        const [day, month, year] = input.split('/');
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      }
+      const parsed = new Date(input);
+      return isNaN(parsed) ? null : parsed;
+    }
+
+    function formatDDMMYYYY(date) {
+      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = date.getFullYear();
+      return `${d}/${m}/${y}`;
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector('#lawsTable tbody');
+      tbody.innerHTML = '';
+      data.forEach((row, index) => {
+        let proposerList = (row.knesset_members || '').split(/,|;/).map(p => p.trim()).filter(p => p);
+
+        if (row.type && (row.type.includes('ממשלתית') || row.type.includes('ועדה'))) {
+          proposerList = [row.type];
+        }
+
+        const mainProposer = proposerList[0] || '';
+        const otherProposers = proposerList.slice(1);
+        const otherId = `more-${index}`;
+        const lastDate = toValidDate(row.last_date);
+        const formattedDate = lastDate ? formatDDMMYYYY(lastDate) : '';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.name || ''}</td>
+          <td>${row.stage || ''}</td>
+          <td class="proposer-cell">
+            <span>${mainProposer}</span>
+            ${otherProposers.length ? `<button class="show-more-btn" onclick="toggleMore('${otherId}')">+</button>
+            <span id="${otherId}" class="more-proposers hidden">${otherProposers.join(', ')}</span>` : ''}
+          </td>
+          <td>${formattedDate}</td>
+          <td><a href="${row.link}" target="_blank">לצפייה</a></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleMore(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle('hidden');
+    }
+
+    function filterTable() {
+      const name = document.getElementById('searchName').value.toLowerCase();
+      const stage = document.getElementById('searchStage').value.toLowerCase();
+      const proposer = document.getElementById('searchProposer').value.toLowerCase();
+      const daysVal = document.getElementById('searchDays').value;
+      const days = daysVal ? parseInt(daysVal) : null;
+      const today = new Date();
+
+      const filtered = allData.filter(row => {
+        const rowName = (row.name || '').toLowerCase();
+        const rowStage = (row.stage || '').toLowerCase();
+        const rowProposer = (row.knesset_members || '').toLowerCase();
+        const rowDate = toValidDate(row.last_date);
+
+        return (
+          (!name || rowName.includes(name)) &&
+          (!stage || rowStage.includes(stage)) &&
+          (!proposer || rowProposer.includes(proposer)) &&
+          (!days || (rowDate && (today - rowDate) / (1000 * 60 * 60 * 24) <= days))
+        );
+      });
+
+      updateStageOptions();
+      renderTable(filtered);
+    }
+
+    fetchExcel();
+  </script>
 </body>
 </html>
