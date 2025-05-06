@@ -11,8 +11,8 @@
     th, td { border: 1px solid #ccc; padding: 8px; text-align: right; overflow-wrap: break-word; vertical-align: top; }
     th { background-color: #f2f2f2; }
     #lastUpdate { margin-top: 10px; font-weight: bold; }
-    .proposer-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
-    .more-proposers { display: inline; margin-right: 5px; color: #333; }
+    .proposer-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; position: relative; }
+    .more-proposers { display: inline; color: #333; margin-inline-start: 5px; }
     .hidden { display: none; }
     .show-more-btn { cursor: pointer; color: blue; border: none; background: none; text-decoration: underline; margin-right: 5px; }
   </style>
@@ -24,7 +24,7 @@
     <input type="text" id="searchName" placeholder="חפש לפי שם החוק">
     <select id="searchStage"></select>
     <input type="text" id="searchProposer" placeholder="חפש לפי מציע">
-    <select id="searchDays">
+    <select id="searchDays" onchange="updateStageOptions()">
       <option value="">כל התאריכים</option>
       <option value="7">7 ימים אחרונים</option>
       <option value="30">30 ימים אחרונים</option>
@@ -56,14 +56,23 @@
       const sheet = workbook.Sheets['כנסת25'];
       const json = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: '' });
       allData = json;
-      populateStageOptions(json);
+      updateStageOptions();
       renderTable(json);
       updateLastUpdateDate(json);
     }
 
-    function populateStageOptions(data) {
+    function updateStageOptions() {
       const stageSelect = document.getElementById('searchStage');
-      const uniqueStages = [...new Set(data.map(row => row.stage).filter(Boolean))];
+      const daysVal = document.getElementById('searchDays').value;
+      const days = daysVal ? parseInt(daysVal) : null;
+      const today = new Date();
+
+      const filtered = allData.filter(row => {
+        const rowDate = toValidDate(row.last_date);
+        return !days || (rowDate && (today - rowDate) / (1000 * 60 * 60 * 24) <= days);
+      });
+
+      const uniqueStages = [...new Set(filtered.map(row => row.stage).filter(Boolean))];
       stageSelect.innerHTML = '<option value="">שלב החקיקה</option>' +
         uniqueStages.map(stage => `<option value="${stage}">${stage}</option>`).join('');
     }
@@ -120,7 +129,7 @@
           <td>${row.name || ''}</td>
           <td>${row.stage || ''}</td>
           <td class="proposer-cell">
-            ${mainProposer}
+            <span>${mainProposer}</span>
             ${otherProposers.length ? `<button class="show-more-btn" onclick="toggleMore('${otherId}')">+</button>
             <span id="${otherId}" class="more-proposers hidden">${otherProposers.join(', ')}</span>` : ''}
           </td>
@@ -158,6 +167,7 @@
         );
       });
 
+      updateStageOptions();
       renderTable(filtered);
     }
 
