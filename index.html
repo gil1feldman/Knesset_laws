@@ -73,7 +73,7 @@
       const dates = data.map(row => toValidDate(row.last_date)).filter(Boolean);
       if (dates.length > 0) {
         const latest = new Date(Math.max(...dates.map(d => d.getTime())));
-        const formatted = latest.toLocaleDateString('he-IL');
+        const formatted = formatDDMMYYYY(latest);
         document.getElementById('lastUpdate').innerText = `עדכני לתאריך: ${formatted}`;
       } else {
         document.getElementById('lastUpdate').innerText = 'אין תאריכים זמינים';
@@ -85,8 +85,19 @@
         const date = XLSX.SSF.parse_date_code(input);
         return new Date(date.y, date.m - 1, date.d);
       }
+      if (typeof input === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(input)) {
+        const [day, month, year] = input.split('/');
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      }
       const parsed = new Date(input);
       return isNaN(parsed) ? null : parsed;
+    }
+
+    function formatDDMMYYYY(date) {
+      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = date.getFullYear();
+      return `${d}/${m}/${y}`;
     }
 
     function renderTable(data) {
@@ -98,7 +109,7 @@
         const otherProposers = proposerList.slice(1);
         const otherId = `more-${index}`;
         const lastDate = toValidDate(row.last_date);
-        const formattedDate = lastDate ? lastDate.toLocaleDateString('he-IL') : '';
+        const formattedDate = lastDate ? formatDDMMYYYY(lastDate) : '';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
