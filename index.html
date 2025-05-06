@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>הצעות חוק - הכנסת ה-25</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial; direction: rtl; padding: 20px; }
+    input, select { margin: 5px; padding: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: right; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>הצעות חוק - הכנסת ה-25</h1>
+  <div>
+    <input type="text" id="searchName" placeholder="חפש לפי שם החוק" oninput="filterTable()">
+    <input type="text" id="searchStage" placeholder="חפש לפי שלב" oninput="filterTable()">
+    <input type="text" id="searchProposer" placeholder="חפש לפי מציע" oninput="filterTable()">
+    <input type="number" id="searchDays" placeholder="מספר ימים אחרונים" oninput="filterTable()">
+  </div>
+  <table id="lawsTable">
+    <thead>
+      <tr>
+        <th>שם החוק</th>
+        <th>שלב</th>
+        <th>שמות המציעים</th>
+        <th>תאריך עדכון אחרון</th>
+        <th>סוג</th>
+        <th>קישור</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let allData = [];
+
+    async function fetchExcel() {
+      const url = 'https://raw.githubusercontent.com/gil1feldman/Knesset_laws/main/%D7%94%D7%A6%D7%A2%D7%95%D7%AA%20%D7%97%D7%95%D7%A7%20%D7%9E%D7%90%D7%95%D7%97%D7%93.xlsx';
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheet = workbook.Sheets['כנסת25'];
+      const json = XLSX.utils.sheet_to_json(sheet);
+      allData = json;
+      renderTable(json);
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector('#lawsTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.name || ''}</td>
+          <td>${row.stage || ''}</td>
+          <td>${row.knesset_members || ''}</td>
+          <td>${row.last_date || ''}</td>
+          <td>${row.type || ''}</td>
+          <td><a href="${row.link}" target="_blank">לצפייה</a></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterTable() {
+      const name = document.getElementById('searchName').value.toLowerCase();
+      const stage = document.getElementById('searchStage').value.toLowerCase();
+      const proposer = document.getElementById('searchProposer').value.toLowerCase();
+      const days = parseInt(document.getElementById('searchDays').value);
+      const today = new Date();
+
+      const filtered = allData.filter(row => {
+        const rowName = (row.name || '').toLowerCase();
+        const rowStage = (row.stage || '').toLowerCase();
+        const rowProposer = (row.knesset_members || '').toLowerCase();
+        const rowDate = row.last_date ? new Date(row.last_date) : null;
+
+        return (
+          (!name || rowName.includes(name)) &&
+          (!stage || rowStage.includes(stage)) &&
+          (!proposer || rowProposer.includes(proposer)) &&
+          (!days || (rowDate && (today - rowDate) / (1000 * 60 * 60 * 24) <= days))
+        );
+      });
+
+      renderTable(filtered);
+    }
+
+    fetchExcel();
+  </script>
+</body>
+</html>
