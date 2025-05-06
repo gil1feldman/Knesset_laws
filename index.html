@@ -188,6 +188,25 @@
       });
 
       const uniqueStages = [...new Set(filtered.map(row => row.stage).filter(Boolean))];
+
+      const stageOrder = [
+        "הצעת החוק נמצאת בשלב הדיון המוקדם",
+        "הצעת החוק נעצרה בשלב הדיון המוקדם",
+        "הצעת החוק נעצרה בשלב ההכנה לקריאה הראשונה",
+        "הצעת החוק נמצאת בשלב הקריאה הראשונה",
+        "הצעת החוק נעצרה בשלב הקריאה הראשונה",
+        "הצעת החוק נמצאת בשלב ההכנה לקריאה הראשונה בוועדה",
+        "הצעת החוק נעצרה בשלב ההכנה לקריאה השנייה והשלישית",
+        "הצעת החוק נמצאת בשלב הקריאה השנייה והשלישית",
+        "הצעת החוק התקבלה בקריאה שלישית והפכה לחוק"
+      ];
+
+      uniqueStages.sort((a, b) => {
+        const aIndex = stageOrder.indexOf(a);
+        const bIndex = stageOrder.indexOf(b);
+        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      });
+
       stageSelect.innerHTML = '<option value="">שלב החקיקה</option>' +
         uniqueStages.map(stage => `<option value="${stage}">${stage}</option>`).join('');
     }
