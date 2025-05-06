@@ -54,7 +54,7 @@
       const arrayBuffer = await response.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
       const sheet = workbook.Sheets['כנסת25'];
-      const json = XLSX.utils.sheet_to_json(sheet, { raw: false, dateNF: "dd/mm/yyyy" });
+      const json = XLSX.utils.sheet_to_json(sheet, { raw: true });
       allData = json;
       populateStageOptions(json);
       renderTable(json);
@@ -83,7 +83,7 @@
 
     function toValidDate(input) {
       if (input instanceof Date) return input;
-      const parsed = new Date(input);
+      const parsed = new Date(Date.parse(input));
       return isNaN(parsed) ? null : parsed;
     }
 
@@ -95,6 +95,8 @@
         const mainProposer = proposerList[0] || '';
         const otherProposers = proposerList.slice(1);
         const otherId = `more-${index}`;
+        const lastDate = toValidDate(row.last_date);
+        const formattedDate = lastDate ? lastDate.toLocaleDateString('he-IL') : '';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -105,7 +107,7 @@
             ${otherProposers.length ? `<button class="show-more-btn" onclick="toggleMore('${otherId}')">+</button>
             <div id="${otherId}" class="more-proposers">${otherProposers.join('<br>')}</div>` : ''}
           </td>
-          <td>${row.last_date || ''}</td>
+          <td>${formattedDate}</td>
           <td>${row.type || ''}</td>
           <td><a href="${row.link}" target="_blank">לצפייה</a></td>
         `;
