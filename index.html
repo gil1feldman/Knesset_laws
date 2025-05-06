@@ -13,7 +13,7 @@
     #lastUpdate { margin-top: 10px; font-weight: bold; }
     .proposer-cell { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
     .more-proposers { display: none; position: absolute; background: #fff; border: 1px solid #ccc; padding: 5px; z-index: 10; }
-    .show-more-btn { cursor: pointer; color: blue; border: none; background: none; text-decoration: underline; }
+    .show-more-btn { cursor: pointer; color: blue; border: none; background: none; text-decoration: underline; margin-right: 5px; }
   </style>
 </head>
 <body>
@@ -52,9 +52,9 @@
       const url = 'https://raw.githubusercontent.com/gil1feldman/Knesset_laws/main/%D7%94%D7%A6%D7%A2%D7%95%D7%AA%20%D7%97%D7%95%D7%A7%20%D7%9E%D7%90%D7%95%D7%97%D7%93.xlsx';
       const response = await fetch(url);
       const arrayBuffer = await response.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
       const sheet = workbook.Sheets['כנסת25'];
-      const json = XLSX.utils.sheet_to_json(sheet);
+      const json = XLSX.utils.sheet_to_json(sheet, { raw: false });
       allData = json;
       populateStageOptions(json);
       renderTable(json);
@@ -70,8 +70,8 @@
 
     function updateLastUpdateDate(data) {
       const dates = data
-        .map(row => new Date(row.last_date))
-        .filter(d => !isNaN(d));
+        .map(row => parseDate(row.last_date))
+        .filter(d => d instanceof Date && !isNaN(d));
       if (dates.length > 0) {
         const latest = new Date(Math.max(...dates));
         const formatted = latest.toLocaleDateString('he-IL');
@@ -81,13 +81,25 @@
       }
     }
 
+    function parseDate(dateStr) {
+      if (!dateStr) return null;
+      const parts = dateStr.split(/[-\/]/);
+      if (parts.length === 3) {
+        const [year, month, day] = parts.map(p => parseInt(p));
+        if (year > 1900 && month <= 12) return new Date(year, month - 1, day);
+      }
+      const parsed = new Date(dateStr);
+      return isNaN(parsed) ? null : parsed;
+    }
+
     function renderTable(data) {
       const tbody = document.querySelector('#lawsTable tbody');
       tbody.innerHTML = '';
-      data.forEach(row => {
-        const proposerList = (row.knesset_members || '').split(/,|\u05E2"/).map(p => p.trim()).filter(p => p);
+      data.forEach((row, index) => {
+        const proposerList = (row.knesset_members || '').split(/,|;/).map(p => p.trim()).filter(p => p);
         const mainProposer = proposerList[0] || '';
-        const otherProposers = proposerList.slice(1).join(', ');
+        const otherProposers = proposerList.slice(1);
+        const otherId = `more-${index}`;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -95,8 +107,8 @@
           <td>${row.stage || ''}</td>
           <td class="proposer-cell">
             ${mainProposer}
-            ${otherProposers ? `<button class="show-more-btn" onclick="this.nextElementSibling.style.display='block'">+</button>
-            <div class="more-proposers" onclick="this.style.display='none'">${otherProposers}</div>` : ''}
+            ${otherProposers.length ? `<button class="show-more-btn" onclick="toggleMore('${otherId}')">+</button>
+            <div id="${otherId}" class="more-proposers">${otherProposers.join('<br>')}</div>` : ''}
           </td>
           <td>${row.last_date || ''}</td>
           <td>${row.type || ''}</td>
@@ -104,6 +116,11 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function toggleMore(id) {
+      const el = document.getElementById(id);
+      el.style.display = (el.style.display === 'block') ? 'none' : 'block';
     }
 
     function filterTable() {
@@ -118,7 +135,7 @@
         const rowName = (row.name || '').toLowerCase();
         const rowStage = (row.stage || '').toLowerCase();
         const rowProposer = (row.knesset_members || '').toLowerCase();
-        const rowDate = row.last_date ? new Date(row.last_date) : null;
+        const rowDate = parseDate(row.last_date);
 
         return (
           (!name || rowName.includes(name)) &&
