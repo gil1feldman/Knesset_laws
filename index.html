@@ -183,25 +183,6 @@
 
     function updateStageOptions() {
       const stageSelect = document.getElementById('searchStage');
-      const status = document.getElementById('statusFilter').value;
-      const daysVal = document.getElementById('searchDays').value;
-      const days = daysVal ? parseInt(daysVal) : null;
-      const today = new Date();
-
-      const activeStages = [
-        "הצעת החוק נמצאת בשלב הדיון המוקדם",
-        "הצעת החוק נמצאת בשלב הקריאה הראשונה",
-        "הצעת החוק נמצאת בשלב ההכנה לקריאה הראשונה בוועדה",
-        "הצעת החוק נמצאת בשלב ההכנה בוועדה לקריאה השנייה והשלישית",
-        "הצעת החוק נמצאת בשלב הקריאה השנייה והשלישית"
-      ];
-      const inactiveStages = [
-        "הצעת החוק נעצרה בשלב הדיון המוקדם",
-        "הצעת החוק נעצרה בשלב ההכנה לקריאה הראשונה",
-        "הצעת החוק נעצרה בשלב הקריאה הראשונה",
-        "הצעת החוק נעצרה בשלב ההכנה לקריאה השנייה והשלישית"
-      ];
-      const approvedStages = ["הצעת החוק התקבלה בקריאה שלישית והפכה לחוק"];
       const daysVal = document.getElementById('searchDays').value;
       const days = daysVal ? parseInt(daysVal) : null;
       const status = document.getElementById('statusFilter').value;
@@ -348,7 +329,7 @@
 
     function filterTable() {
       const name = document.getElementById('searchName').value.toLowerCase();
-      const stage = document.getElementById('searchStage').value;
+      const stage = document.getElementById('searchStage').value.toLowerCase();
       const proposer = document.getElementById('searchProposer').value.toLowerCase();
       const daysVal = document.getElementById('searchDays').value;
       const status = document.getElementById('statusFilter').value;
@@ -378,7 +359,7 @@
 
         return (
           (!name || rowName.includes(name)) &&
-          (!stage || row.stage === stage) &&
+          (!stage || rowStage.includes(stage)) &&
           (!proposer || rowProposer.includes(proposer)) &&
           (!days || (rowDate && (today - rowDate) / (1000 * 60 * 60 * 24) <= days)) &&
           (!status ||
